@@ -17,7 +17,6 @@ from mapas import obtener_catalogo_mapas, VACIO
 
 
 def obtener_celdas_libres(tablero: List[List[int]], pos_salida: Tuple[int, int]) -> List[Tuple[int, int]]:
-    """Devuelve una lista con todas las coordenadas transitables del tablero."""
     celdas_libres = []
     for f in range(len(tablero)):
         for c in range(len(tablero[0])):
@@ -29,8 +28,7 @@ def obtener_celdas_libres(tablero: List[List[int]], pos_salida: Tuple[int, int])
 def generar_agentes_y_fuegos_aleatorios(celdas_libres: List[Tuple[int, int]], 
                                        cant_agentes: int, 
                                        cant_fuegos: int = 4) -> Tuple[List[Agente], List[Tuple[int, int]]]:
-    """Genera posiciones estocásticas exclusivas para agentes e incendios."""
-    
+ 
     # Proteger si la densidad requerida supera la capacidad del mapa
     limite_capacidad = len(celdas_libres) - cant_fuegos
     if cant_agentes > limite_capacidad:
