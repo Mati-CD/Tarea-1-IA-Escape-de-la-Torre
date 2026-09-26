@@ -52,7 +52,6 @@ def obtener_mapa_1() -> Dict[str, Any]:
         "nombre": "1. Alta Densidad",
         "tablero": tablero,
         "salida": (39, 39),
-        "fuegos_iniciales": [(0, 0), (0, 39)]
     }
 
 def obtener_mapa_2() -> Dict[str, Any]:
@@ -103,7 +102,6 @@ def obtener_mapa_2() -> Dict[str, Any]:
         "nombre": "2. Densidad Media",
         "tablero": tablero,
         "salida": (39, 39),
-        "fuegos_iniciales": [(0, 20)]
     }
 
 def obtener_mapa_3() -> Dict[str, Any]:
@@ -154,7 +152,6 @@ def obtener_mapa_3() -> Dict[str, Any]:
         "nombre": "3. Baja Densidad",
         "tablero": tablero,
         "salida": (39, 20),
-        "fuegos_iniciales": [(5, 20)]
     }
 
 def obtener_catalogo_mapas() -> List[Dict[str, Any]]:
