@@ -132,4 +132,4 @@ def ejecutar_benchmark(iteraciones: int = 50, cant_agentes: int = 150, cant_fueg
 
 
 if __name__ == "__main__":
-    ejecutar_benchmark(iteraciones=50, cant_agentes=150, cant_fuegos_azar=4)
+    ejecutar_benchmark(iteraciones=200, cant_agentes=150, cant_fuegos_azar=4)
