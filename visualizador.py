@@ -3,6 +3,7 @@ import os
 import pygame
 import random
 
+# Forzar a Python a reconocer la carpeta 'src'
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 
 from entorno import Entorno, VACIO, MURO, SALIDA, FUEGO
@@ -26,12 +27,13 @@ COLOR_BOTON_ACTIVO = (41, 128, 185)
 COLOR_BOTON_MAPA_ACTIVO = (142, 68, 173)
 COLOR_BOTON_RESALTE = (80, 85, 95)
 
-TAM_CELDA = 50
+# Ajustado a 20 para que los mapas de 40x40 (800x800 px) quepan bien en el monitor
+TAM_CELDA = 20 
 ALTO_BARRA_SUPERIOR = 80
 ALTO_PANEL_INFERIOR = 95
 
 
-def reiniciar_escenario(info_mapa: dict):
+def reiniciar_escenario(info_mapa: dict, cant_agentes: int = 150, cant_fuegos: int = 3):
     entorno = Entorno(
         matriz_tablero=info_mapa["tablero"],
         pos_salida=info_mapa["salida"],
@@ -46,14 +48,17 @@ def reiniciar_escenario(info_mapa: dict):
             if entorno.tablero[f][c] == VACIO and (f, c) != entorno.pos_salida:
                 celdas_libres.append((f, c))
 
-    # Elegir posiciones aleatorias
-    seleccionadas = random.sample(celdas_libres, 6 + 1)
-    pos_agentes = seleccionadas[:6]
-    fuego_extra = seleccionadas[6:]
+    # Limitar agentes si el mapa es muy pequeño (protección)
+    if (cant_agentes + cant_fuegos) > len(celdas_libres):
+        cant_agentes = len(celdas_libres) - cant_fuegos
 
-    # Aplicar fuegos 
-    fuegos_totales = info_mapa["fuegos_iniciales"] + fuego_extra
-    entorno.agregar_fuego_inicial(fuegos_totales)
+    # Elegir posiciones aleatorias para agentes Y fuegos al mismo tiempo
+    seleccionadas = random.sample(celdas_libres, cant_agentes + cant_fuegos)
+    pos_agentes = seleccionadas[:cant_agentes]
+    pos_fuegos_azar = seleccionadas[cant_agentes:]
+
+    # Aplicar los fuegos aleatorios
+    entorno.agregar_fuego_inicial(pos_fuegos_azar)
 
     # Crear los agentes en las posiciones estocásticas
     agentes = [Agente(id_agente=i+1, pos_inicial=pos) for i, pos in enumerate(pos_agentes)]
@@ -61,11 +66,13 @@ def reiniciar_escenario(info_mapa: dict):
     entorno.actualizar_ocupacion(agentes)
     return entorno, agentes
 
+
 def main():
     pygame.init()
     pygame.font.init()
     fuente = pygame.font.SysFont("Arial", 15, bold=True)
     fuente_chica = pygame.font.SysFont("Arial", 12)
+    # Sin fuente micro porque con TAM_CELDA=20 los números ya casi no se leen bien, mejor círculos limpios
 
     catalogo_mapas = obtener_catalogo_mapas()
     indice_mapa = 0
@@ -80,34 +87,40 @@ def main():
     ]
     indice_algoritmo = 3
 
-    entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa])
+    # Generamos 150 agentes y 4 focos de incendio al azar
+    entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa], cant_agentes=150, cant_fuegos=4)
 
-    ancho = entorno.columnas * TAM_CELDA
-    alto = ALTO_BARRA_SUPERIOR + (entorno.filas * TAM_CELDA) + ALTO_PANEL_INFERIOR
-    pantalla = pygame.display.set_mode((ancho, alto))
+    # Función auxiliar para ajustar la ventana si el mapa cambia de tamaño
+    def ajustar_ventana(entorno):
+        ancho_req = max(800, entorno.columnas * TAM_CELDA)
+        alto_req = ALTO_BARRA_SUPERIOR + (entorno.filas * TAM_CELDA) + ALTO_PANEL_INFERIOR
+        return pygame.display.set_mode((ancho_req, alto_req)), ancho_req
+
+    pantalla, ancho = ajustar_ventana(entorno)
     pygame.display.set_caption("Visualizador: Escape de la Torre")
 
     reloj = pygame.time.Clock()
     en_ejecucion = True
-    pausado = False
-    retardo_ms = 400
+    pausado = True 
+    retardo_ms = 400 
     tiempo_ultimo_paso = pygame.time.get_ticks()
-
-    botones_mapas = []
-    ancho_btn_mapa = 150
-    for i in range(len(catalogo_mapas)):
-        botones_mapas.append(pygame.Rect(10 + i * (ancho_btn_mapa + 10), 40, ancho_btn_mapa, 30))
-
-    botones_algoritmos = []
-    ancho_btn_algo = (ancho - 20 - (len(algoritmos) - 1) * 6) // len(algoritmos)
-    pos_y_algo = ALTO_BARRA_SUPERIOR + (entorno.filas * TAM_CELDA) + 40
-    for i in range(len(algoritmos)):
-        bx = 10 + i * (ancho_btn_algo + 6)
-        botones_algoritmos.append(pygame.Rect(bx, pos_y_algo, ancho_btn_algo, 35))
 
     while en_ejecucion:
         tiempo_actual = pygame.time.get_ticks()
         pos_raton = pygame.mouse.get_pos()
+        
+        # Posición de botones 
+        botones_mapas = []
+        ancho_btn_mapa = 150
+        for i in range(len(catalogo_mapas)):
+            botones_mapas.append(pygame.Rect(10 + i * (ancho_btn_mapa + 10), 40, ancho_btn_mapa, 30))
+
+        botones_algoritmos = []
+        ancho_btn_algo = (ancho - 20 - (len(algoritmos) - 1) * 6) // len(algoritmos)
+        pos_y_algo = ALTO_BARRA_SUPERIOR + (entorno.filas * TAM_CELDA) + 40
+        for i in range(len(algoritmos)):
+            bx = 10 + i * (ancho_btn_algo + 6)
+            botones_algoritmos.append(pygame.Rect(bx, pos_y_algo, ancho_btn_algo, 35))
 
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
@@ -117,33 +130,22 @@ def main():
                 if evento.key == pygame.K_SPACE:
                     pausado = not pausado
                 elif evento.key == pygame.K_r:
-                    entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa])
-                elif evento.key in [pygame.K_1, pygame.K_KP1]:
-                    indice_algoritmo = 0
-                    entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa])
-                elif evento.key in [pygame.K_2, pygame.K_KP2]:
-                    indice_algoritmo = 1
-                    entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa])
-                elif evento.key in [pygame.K_3, pygame.K_KP3]:
-                    indice_algoritmo = 2
-                    entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa])
-                elif evento.key in [pygame.K_4, pygame.K_KP4]:
-                    indice_algoritmo = 3
-                    entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa])
-                elif evento.key in [pygame.K_5, pygame.K_KP5]:
-                    indice_algoritmo = 4
-                    entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa])
+                    entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa], 150, 4)
+                elif pygame.K_1 <= evento.key <= pygame.K_5:
+                    indice_algoritmo = evento.key - pygame.K_1
+                    entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa], 150, 4)
 
             elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
                 for i, rect in enumerate(botones_mapas):
                     if rect.collidepoint(pos_raton):
                         indice_mapa = i
-                        entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa])
+                        entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa], 150, 4)
+                        pantalla, ancho = ajustar_ventana(entorno)
                         break
                 for i, rect in enumerate(botones_algoritmos):
                     if rect.collidepoint(pos_raton):
                         indice_algoritmo = i
-                        entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa])
+                        entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa], 150, 4)
                         break
 
         # Simulación de turnos
@@ -154,10 +156,8 @@ def main():
             tiempo_ultimo_paso = tiempo_actual
             entorno.turno_actual += 1
 
-           
             intenciones = {a.id: a.decidir_siguiente_movimiento(entorno, funcion_actual) for a in agentes_activos}
 
-            # Agente por celda
             posiciones_actuales = {a.pos for a in agentes_activos}
             reservadas = set()
             movimientos_finales = {}
@@ -178,7 +178,7 @@ def main():
                     movimientos_finales[a.id] = deseo
                     reservadas.add(deseo)
 
-            # Aplicar desplazamientos
+            # Desplazamientos
             for a in agentes_activos:
                 a.moverse_a(movimientos_finales[a.id], entorno)
 
@@ -191,7 +191,6 @@ def main():
                     if entorno.tablero[a.pos[0]][a.pos[1]] == FUEGO:
                         a.esta_vivo = False
 
-       
         pantalla.fill(COLOR_FONDO)
 
         # Cabecera superior
@@ -215,11 +214,13 @@ def main():
             txt = fuente_chica.render(f"Mapa {i+1}", True, COLOR_TEXTO)
             pantalla.blit(txt, txt.get_rect(center=rect.center))
 
-        # Tablero
+        # Tablero central
+        desplazamiento_x = (ancho - (entorno.columnas * TAM_CELDA)) // 2
         inicio_y = ALTO_BARRA_SUPERIOR
+        
         for f in range(entorno.filas):
             for c in range(entorno.columnas):
-                rect = pygame.Rect(c * TAM_CELDA, inicio_y + f * TAM_CELDA, TAM_CELDA, TAM_CELDA)
+                rect = pygame.Rect(desplazamiento_x + c * TAM_CELDA, inicio_y + f * TAM_CELDA, TAM_CELDA, TAM_CELDA)
                 tipo = entorno.tablero[f][c]
                 col = COLOR_MURO if tipo == MURO else (COLOR_FUEGO if tipo == FUEGO else (COLOR_SALIDA if (f, c) == entorno.pos_salida else COLOR_VACIO))
                 pygame.draw.rect(pantalla, col, rect)
@@ -229,14 +230,12 @@ def main():
         for a in agentes:
             if a.esta_vivo and not a.ha_escapado:
                 f, c = a.pos
-                cx = c * TAM_CELDA + TAM_CELDA // 2
+                cx = desplazamiento_x + c * TAM_CELDA + TAM_CELDA // 2
                 cy = inicio_y + f * TAM_CELDA + TAM_CELDA // 2
-                pygame.draw.circle(pantalla, COLOR_AGENTE, (cx, cy), TAM_CELDA // 3)
-                txt_id = fuente.render(str(a.id), True, COLOR_TEXTO)
-                pantalla.blit(txt_id, txt_id.get_rect(center=(cx, cy)))
+                pygame.draw.circle(pantalla, COLOR_AGENTE, (cx, cy), TAM_CELDA // 2 - 2)
 
         # Panel Inferior de Algoritmos
-        lbl_instrucciones = fuente_chica.render("[Espacio]: Pausa/Reanudar | [R]: Reiniciar simulación", True, (180, 180, 180))
+        lbl_instrucciones = fuente_chica.render("[Espacio]: Pausa/Reanudar | [R]: Reiniciar (Genera nuevos agentes y fuegos al azar)", True, (180, 180, 180))
         pantalla.blit(lbl_instrucciones, (10, inicio_y + entorno.filas * TAM_CELDA + 12))
 
         for i, (btn, rect) in enumerate(zip(algoritmos, botones_algoritmos)):
