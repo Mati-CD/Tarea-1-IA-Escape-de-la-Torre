@@ -3,7 +3,6 @@ import os
 import pygame
 import random
 
-# Forzar a Python a reconocer la carpeta 'src'
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 
 from entorno import Entorno, VACIO, MURO, SALIDA, FUEGO
@@ -13,7 +12,6 @@ from busqueda_informada import greedy_best_first_search, a_star_search
 from genetico import PlanificadorGenetico
 from mapas import obtener_catalogo_mapas
 
-# Colores 
 COLOR_FONDO = (25, 25, 30)
 COLOR_VACIO = (240, 240, 240)
 COLOR_MURO = (50, 50, 55)
@@ -27,7 +25,6 @@ COLOR_BOTON_ACTIVO = (41, 128, 185)
 COLOR_BOTON_MAPA_ACTIVO = (142, 68, 173)
 COLOR_BOTON_RESALTE = (80, 85, 95)
 
-# Ajustado a 20 para que los mapas de 40x40 (800x800 px) quepan bien en el monitor
 TAM_CELDA = 20 
 ALTO_BARRA_SUPERIOR = 80
 ALTO_PANEL_INFERIOR = 95
@@ -48,7 +45,7 @@ def reiniciar_escenario(info_mapa: dict, cant_agentes: int = 150, cant_fuegos: i
             if entorno.tablero[f][c] == VACIO and (f, c) != entorno.pos_salida:
                 celdas_libres.append((f, c))
 
-    # Limitar agentes si el mapa es muy pequeño (protección)
+    # Limitar agentes si el mapa es muy pequeño 
     if (cant_agentes + cant_fuegos) > len(celdas_libres):
         cant_agentes = len(celdas_libres) - cant_fuegos
 
@@ -72,7 +69,6 @@ def main():
     pygame.font.init()
     fuente = pygame.font.SysFont("Arial", 15, bold=True)
     fuente_chica = pygame.font.SysFont("Arial", 12)
-    # Sin fuente micro porque con TAM_CELDA=20 los números ya casi no se leen bien, mejor círculos limpios
 
     catalogo_mapas = obtener_catalogo_mapas()
     indice_mapa = 0
@@ -90,7 +86,6 @@ def main():
     # Generamos 150 agentes y 4 focos de incendio al azar
     entorno, agentes = reiniciar_escenario(catalogo_mapas[indice_mapa], cant_agentes=150, cant_fuegos=4)
 
-    # Función auxiliar para ajustar la ventana si el mapa cambia de tamaño
     def ajustar_ventana(entorno):
         ancho_req = max(800, entorno.columnas * TAM_CELDA)
         alto_req = ALTO_BARRA_SUPERIOR + (entorno.filas * TAM_CELDA) + ALTO_PANEL_INFERIOR

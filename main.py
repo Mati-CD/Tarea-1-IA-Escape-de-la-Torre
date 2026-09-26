@@ -1,54 +1,82 @@
 import sys
 import os
+import random
 
+# Forzar a Python a reconocer la carpeta 'src'
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 
 from entorno import Entorno
 from agente import Agente
-from busqueda_no_informada import breadth_first_search, uniform_cost_search
-from busqueda_informada import greedy_best_first_search, a_star_search
-from genetico import PlanificadorGenetico
 from simulacion import ejecutar_simulacion
-from mapas import obtener_mapa_1
+from mapas import obtener_catalogo_mapas, VACIO
+from busqueda_informada import a_star_search
+from genetico import PlanificadorGenetico
 
 
-def ejecutar_demostracion():
-    info_mapa = obtener_mapa_1()
-    planificador_ga = PlanificadorGenetico(tam_poblacion=35, longitud_cromosoma=25, generaciones=35)
+def generar_agentes_y_fuegos_aleatorios(entorno: Entorno, cant_agentes: int = 150, cant_fuegos: int = 4):
+    """Identifica celdas libres e instancia agentes y fuegos al azar."""
+    celdas_libres = []
+    for f in range(entorno.filas):
+        for c in range(entorno.columnas):
+            if entorno.tablero[f][c] == VACIO and (f, c) != entorno.pos_salida:
+                celdas_libres.append((f, c))
 
-    algoritmos = {
-        "1. Breadth-First Search": breadth_first_search,
-        "2. Uniform Cost Search": uniform_cost_search,
-        "3. Greedy Best-First Search": greedy_best_first_search,
-        "4. A* Search": a_star_search,
-        "5. Genetic Algorithm": planificador_ga.genetic_algorithm_search
-    }
+    if (cant_agentes + cant_fuegos) > len(celdas_libres):
+        cant_agentes = len(celdas_libres) - cant_fuegos
 
-    print("=== TAREA 1: ESCAPE DE LA TORRE ===")
-    print("Ejecución de prueba sobre el mapa de demostración:\n")
+    seleccionadas = random.sample(celdas_libres, cant_agentes + cant_fuegos)
+    pos_agentes = seleccionadas[:cant_agentes]
+    pos_fuegos = seleccionadas[cant_agentes:]
+    
+    agentes = [Agente(id_agente=i+1, pos_inicial=pos) for i, pos in enumerate(pos_agentes)]
+    return agentes, pos_fuegos
 
-    for nombre, funcion_busqueda in algoritmos.items():
+
+def main():
+    print("=" * 60)
+    print("   SIMULACIÓN EN TERMINAL: ESCAPE DE LA TORRE (TEST 3 MAPAS)")
+    print("=" * 60)
+    
+    catalogo_mapas = obtener_catalogo_mapas()
+    algoritmo_elegido = a_star_search 
+    
+    for indice, info_mapa in enumerate(catalogo_mapas, start=1):
+        print(f"\n--- [PRUEBA {indice}/3] Cargando: {info_mapa['nombre']} ---")
+
+        # Configuración del Entorno
         entorno = Entorno(
-            matriz_tablero=info_mapa["tablero"], 
-            pos_salida=info_mapa["salida"], 
-            k_propagacion_fuego=3
+            matriz_tablero=info_mapa["tablero"],
+            pos_salida=info_mapa["salida"],
+            k_propagacion_fuego=3,
+            penalizacion_alfa=1.5
         )
-        entorno.agregar_fuego_inicial(info_mapa["fuegos_iniciales"])
 
-        agentes = [
-            Agente(id_agente=1, pos_inicial=(2, 0)),
-            Agente(id_agente=2, pos_inicial=(2, 2)),
-            Agente(id_agente=3, pos_inicial=(4, 0)),
-            Agente(id_agente=4, pos_inicial=(4, 3)),
-        ]
+        # Generación Estocástica
+        cant_agentes = 150
+        cant_fuegos_azar = 4
+        agentes, fuegos_azar = generar_agentes_y_fuegos_aleatorios(entorno, cant_agentes, cant_fuegos_azar)    
+        fuegos_totales = fuegos_azar
+        entorno.agregar_fuego_inicial(fuegos_totales)
+        
+        print(f"Instanciados {len(agentes)} agentes y {len(fuegos_totales)} focos de incendio.")
+        print("Iniciando evacuación (Algoritmo: A*)...")
+        
+        # Ejecución de la Simulación
+        resultados = ejecutar_simulacion(entorno, agentes, algoritmo_elegido, turnos_maximos=300)
 
-        resultado = ejecutar_simulacion(entorno, agentes, funcion_busqueda, turnos_maximos=80)
+        # Resultados calculados directamente desde los objetos
+        salvados = sum(1 for a in agentes if a.ha_escapado)
+        muertos = sum(1 for a in agentes if not a.esta_vivo)
+        total = len(agentes)
+        tasa = (salvados / total) * 100 if total > 0 else 0.0
 
-        print(f"[{nombre}]")
-        print(f" - Sobrevivientes : {resultado['sobrevivientes']} / {resultado['total_agentes']} ({resultado['tasa_supervivencia'] * 100:.1f}%)")
-        print(f" - Tiempo despeje : {resultado['tiempo_despeje'] if resultado['tiempo_despeje'] is not None else 'Sin evacuados'} turnos")
-        print(f" - Turnos totales : {resultado['turnos_totales']}\n")
-
+        print(f"-> Resultados {info_mapa['nombre']}:")
+        print(f"   Total Agentes: {total}")
+        print(f"   Salvados: {salvados}")
+        print(f"   Bajas (Fuego): {muertos}")
+        print(f"   Tasa de Supervivencia: {tasa:.2f}%")
+        print(f"   Turnos hasta el final: {resultados.get('tiempo_despeje', 'Límite alcanzado')}")
+        print("-" * 60)
 
 if __name__ == "__main__":
-    ejecutar_demostracion()
+    main()
