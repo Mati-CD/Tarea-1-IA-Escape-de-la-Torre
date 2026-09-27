@@ -1,7 +1,7 @@
 # Tarea 1: Escape de la Torre - Inteligencia Artificial
 
 ## Integrante
-* Matías Cuello
+* Matías Cuello (2024424866)
 
 ## Descripción del Proyecto
 Este repositorio contiene la implementación de un sistema de navegación y toma de decisiones para la evacuación de un edificio en llamas. El entorno simula la propagación dinámica del fuego y penaliza la congestión en los pasillos.
