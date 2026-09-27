@@ -35,7 +35,7 @@ python visualizador.py
 * Clic con el ratón en los botones superiores e inferiores para cambiar de mapa o algoritmo.
 
 ### 2. Simulación por Consola
-Ejecuta una demostración rápida en modo texto de todos los algoritmos sobre el Mapa 1.
+Ejecuta una demostración rápida en modo texto de todos los algoritmos sobre el Mapa 1, 2 y 3.
 
 ```bash
 python main.py
